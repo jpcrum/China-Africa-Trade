@@ -1,0 +1,415 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import pandas as pd
+%matplotlib inline
+
+import pip
+package_name='xlrd'
+pip.main(['install', package_name])
+
+
+from IPython.display import display
+
+os.chdir('C:/Users/sjcrum/Documents/Data Sets')
+
+# # Importing and Cleaning Data
+
+pd.set_option('display.max_rows', 50)
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.width', 80) 
+
+# Exports and Imports
+
+ChinaExports = pd.read_excel('ChinaTrade.xlsx', 'CN_EXtoAfr')
+ChinaImports = pd.read_excel('ChinaTrade.xlsx', 'CN_IMfromAfr')
+
+def cleanTrade(df, name):
+    df.columns = df.iloc[0]
+    df = df.iloc[1:, :-1]
+    df = df.rename(columns = {"US$ mn unadjusted":"year"})
+    df = df.rename(columns = {"CÃ´te d'Ivoire": "Cote d'Ivoire"})
+    df = df.rename(columns = {"United Rep. of Tanzania": "Tanzania"})
+    df = df.rename(columns = {"Congo": "Rep. of Congo"})
+    df = df.rename(columns = {"Gambia": "The Gambia"})
+    df = df.rename(columns = {"Total, US$ mn": "{}".format(name)})
+    df = df.dropna(axis=1, thresh = 10)
+    df = df.dropna(axis = 0)
+    df = df.set_index(['year'], drop = True)
+    df['Sudan'].loc['1992':'2011'] = df['Fmr Sudan'].loc['1992':'2011']
+    del df['Fmr Sudan']
+    df = round(df, 2)
+    return df
+    
+ChinaExports = cleanTrade(ChinaExports, "Total Exports")
+ChinaImports = cleanTrade(ChinaImports, "Total Imports")
+
+
+
+# Loans
+
+ChinaLoans = pd.read_excel("ChinaLoans.xlsx", "Loan data by country")
+ChinaLoansSectorYear = pd.read_excel("ChinaLoans.xlsx", "Loan data by sector-year")
+ChinaLoansSectorCountry = pd.read_excel("ChinaLoans.xlsx", "Loan data by sector-country")
+
+
+ChinaLoans.columns = ChinaLoans.iloc[0]
+ChinaLoans = ChinaLoans.iloc[1:,:-1]
+ChinaLoans = ChinaLoans.rename(columns = {"US$mn, unadjusted":"year", "Cape Verde":"Cabo Verde", 
+"CAR": "Central African Rep.", "ROC": "Rep. of Congo", "DRC": "Dem. Rep. of Congo", 
+"Annual Sum, millions of USD unadjusted": "Total Loans"})
+ChinaLoans = ChinaLoans.dropna(axis=1, thresh = 15)
+ChinaLoans = ChinaLoans.dropna(axis = 0)
+ChinaLoans = ChinaLoans.set_index('year', drop = True)
+ChinaLoans = ChinaLoans.iloc[:-1,:]
+del ChinaLoans['Regional']
+
+ChinaLoansSectorYear.columns = ChinaLoansSectorYear.iloc[0]
+ChinaLoansSectorYear = ChinaLoansSectorYear.iloc[1:-6,:]
+ChinaLoansSectorYear = ChinaLoansSectorYear.rename(columns = {"Cape Verde":"Cabo Verde", 
+"CAR": "Central African Rep.", "ROC": "Rep. of Congo", "DRC": "Dem. Rep. of Congo",
+"Annual Sum, millions of USD, unadjusted": "Total Loans"})
+ChinaLoansSectorYear = ChinaLoansSectorYear.dropna(axis=1)
+ChinaLoansSectorYear.index = ChinaLoansSectorYear.iloc[:,0]
+ChinaLoansSectorYear = ChinaLoansSectorYear.iloc[:,1:]
+
+ChinaLoansSectorCountry.columns = ChinaLoansSectorCountry.iloc[0]
+ChinaLoansSectorCountry = ChinaLoansSectorCountry.iloc[1:-6,:]
+ChinaLoansSectorCountry = ChinaLoansSectorCountry.rename(columns = {"Cape Verde":"Cabo Verde", 
+"CAR": "Central African Rep.", "ROC": "Rep. of Congo", "DRC": "Dem. Rep. of Congo",
+"Annual Sum, millions of USD, unadjusted": "Total Loans"})
+ChinaLoansSectorCountry = ChinaLoansSectorCountry.dropna(axis=1)
+ChinaLoansSectorCountry.index = ChinaLoansSectorCountry.iloc[:,0]
+ChinaLoansSectorCountry = ChinaLoansSectorCountry.iloc[:,2:]
+
+
+# Contracts
+
+ChinaContracts = pd.read_excel("ChinaContracts.xlsx")
+
+ChinaContracts.columns = ChinaContracts.iloc[0]
+ChinaContracts = ChinaContracts.iloc[1:, :-1]
+ChinaContracts = ChinaContracts.dropna(axis=1, how = 'all')
+ChinaContracts = ChinaContracts.dropna(axis = 0)
+ChinaContracts = ChinaContracts.rename(columns = {"US$ mn unadjusted": "year", "Cape Verde":"Cabo Verde", 
+"CAR": "Central African Rep.", "Congo, Rep.": "Rep. of Congo", "Congo, Dem. Rep.": "Dem. Rep. of Congo", 
+"Total, millions of US$, unadjusted": "Total Contracts"})
+ChinaContracts = ChinaContracts.set_index(['year'], drop = True)
+ChinaContracts['Sudan'].loc['1998':'2010'] = ChinaContracts['Fmr. Sudan'].loc['1998':'2010']
+del ChinaContracts['Fmr. Sudan']
+
+
+
+
+# # Visuals
+
+
+# Choose Countries
+
+def plotCountries(df, title, *countries):
+    for country in countries:
+        df1 = df.loc[:, country]
+        ax = df1.plot(figsize = (16,10), fontsize = 18, linewidth = 2)
+        ax.set_xlabel('Year', fontsize = 22)
+        ax.set_ylabel('USD millions', fontsize = 22)
+        ax.set_title('Chinese {} in Africa, {}-2015\n'.format(title, df.index[0]), fontsize = 30)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        plt.legend(loc = 'best', prop={'size': 24})
+        plt.grid()
+    plt.show()
+
+plotCountries(ChinaContracts, 'Contracts', 'South Africa', 'Angola', 'Algeria', 'Egypt', 'Sudan', 'Nigeria', 'Ethiopia', 'Dem. Rep. of Congo')
+plotCountries(ChinaLoans, 'Loans', 'South Africa', 'Angola', 'Algeria', 'Egypt', 'Sudan', 'Nigeria', 'Ethiopia', 'Dem. Rep. of Congo')
+plotCountries(ChinaExports, 'Exports', 'South Africa', 'Angola', 'Algeria', 'Egypt', 'Sudan', 'Nigeria', 'Ethiopia', 'Dem. Rep. of the Congo')
+plotCountries(ChinaImports, 'Imports', 'South Africa', 'Angola', 'Algeria', 'Egypt', 'Sudan', 'Nigeria', 'Ethiopia', 'Dem. Rep. of the Congo')
+
+
+
+#Overall Trade With Africa
+
+def plotOverall(*df):
+    for df in df:
+        plt.plot(df.iloc[:, -1])
+        plt.legend(loc = 'best')
+    plt.xlabel("Year")
+    plt.ylabel("Trade Africa in USD millions")
+    plt.title("Chinese Financial Relations with Africa in $USD millions")
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible
+    ax.set_axis_bgcolor("#fffaf0")
+    plt.legend(loc = 'best')
+    plt.grid()
+    plt.show()
+
+plotOverall(ChinaExports, ChinaImports, ChinaLoans, ChinaContracts)
+
+#Yearly graph of trade
+
+plotOverall(ChinaExports, ChinaImports)
+
+def tradeYearly(df, year):
+    df = df[df['year'] == year]
+    df = df.set_index('year', drop = True)
+    df = df.transpose()
+    ax = df.plot(kind = 'bar', legend = False, figsize = (12,8), rot = 0, stacked = False, color = '#20b2aa', fontsize = 16)
+    plt.ylim(0, 130000)
+    ax.set_title('Trade to Africa in %d' % (year), fontsize = 26)
+    ax.set_xlabel('Trade Type', fontsize = 20)
+    ax.set_ylabel('Value in $USD millions', fontsize = 20)
+    plt.show()
+
+tradeYearly(totalTrade, 1992)
+tradeYearly(totalTrade, 1999)
+tradeYearly(totalTrade, 2007)
+tradeYearly(totalTrade, 2014)
+
+def topCountries(df, name, year, n):
+    df = df[df.index == year]
+    df = df.iloc[:, :-1]
+    df = df.transpose()
+    df.columns = ['Value']
+    dfplot = df.sort_values(by = 'Value', ascending = False)[:n]
+    ax = dfplot.plot(kind = 'barh', legend = False, color = '#b22222')
+    ax.set_xlabel('USD millions')
+    ax.set_ylabel('Country')
+    ax.set_title('Top {} African Countries for {} in {}'.format(n, name, year))
+    
+    
+
+topCountries(ChinaImports, 'Imports', 2007, 10)
+topCountries(ChinaImports, 'Imports', 2014, 10)
+topCountries(ChinaExports, 'Exports', 2007, 10)
+topCountries(ChinaExports, 'Exports', 2014, 10)
+
+    
+    
+def topCountriesPie(df, name, y, n):
+    df1 = df
+    df = df[df.index == y]
+    df = df.iloc[:, :-1]
+    df = df.transpose()
+    df.columns = ['Value']
+    df = df.sort_values(by = 'Value', ascending = False)[:n]
+    df1 = df1[df1.index == y]
+    df1 = df1.iloc[:, :-1]
+    df1 = df1.transpose()
+    df1.columns = ['Value']
+    df1 = df1.sort_values(by = 'Value', ascending = False)[(n+1):]
+    df1 = df1.apply(np.sum)[-1]
+    df.loc['Other'] = [df1]
+    plt.pie(df['Value'], labels = df.index, shadow=True, autopct= '%0.2f%%')
+    plt.title('Top {} Countries for {} in {}'.format(n, name, y))
+    plt.show()
+
+
+topCountriesPie(ChinaExports, 'Exports', 2007, 10)
+topCountriesPie(ChinaExports, 'Exports', 2014, 10)
+topCountriesPie(ChinaImports, 'Imports', 2007, 10)
+topCountriesPie(ChinaImports, 'Imports', 2014, 10)
+
+
+# With Which African Nations Has China Historically Traded Most With?
+
+def top10Trade(df, name, n):
+    df1 = df.iloc[:, :-2]
+    df1 = df1.transpose()
+    df1['country'] = df1.index
+    df1 = pd.melt(df1, id_vars = ['country'], var_name = 'year', value_name = 'value')
+    df1 = df1.sort_values(by = ['year', 'value'], ascending = False)
+    df1 = df1.groupby('year').head(10)
+    df1 = df1.set_index('year', drop = False)
+    df1 = df1.pivot(index='year', columns='country', values='value')
+    ax = df1.plot(figsize = (16,10), fontsize = 18)
+    ax.set_xlabel('Year', fontsize = 22)
+    ax.set_ylabel('USD millions', fontsize = 22)
+    ax.set_title('Top 10 Countries for Chinese {}, 1992-2015'.format(name), fontsize = 26)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    plt.legend(loc = 'best', prop={'size': n})
+    plt.grid()
+    
+ 
+top10Trade(ChinaExports, 'Exports', 16)  
+top10Trade(ChinaImports, 'Imports', 12)
+
+
+# Imports vs. Exports
+
+def ExportImport(c):
+    def clean(df):
+        df1 = df.iloc[:, :-2]
+        df1 = df1.transpose()
+        df1['country'] = df1.index
+        df1 = pd.melt(df1, id_vars = ['country'], var_name = 'year', value_name = 'value')
+        df1 = df1.sort_values(by = ['year', 'value'], ascending = False)
+        df1 = df1.set_index('year', drop = False)
+        df1 = df1.pivot(index='year', columns='country', values='value')
+        df1 = df1.loc[:, c]
+        return df1
+    a = clean(ChinaExports)
+    b = clean(ChinaImports)
+    fig = plt.figure() 
+    ax = fig.add_subplot(1, 1, 1)
+    plt.plot(a, label = "{} Exports".format(c))
+    plt.plot(b, label = "{} Imports".format(c))
+    plt.legend(loc = 'best')
+    plt.show()
+
+ExportImport('Nigeria')
+ExportImport('Benin')
+
+
+#Trade Discrepencies
+
+def clean(df, name):
+    df1 = df.iloc[:, :-1]
+    df1 = df1.transpose()
+    df1['country'] = df1.index
+    df1 = pd.melt(df1, id_vars = ['country'], var_name = 'year', value_name = name)
+    return df1
+    
+cleanExports = clean(ChinaExports, 'exports')
+cleanImports = clean(ChinaImports, 'imports')
+
+tradeDifferences = cleanExports.merge(cleanImports, on=['country', 'year'])
+tradeDifferences['AfricanTradeDifference'] = tradeDifferences['imports'] - tradeDifferences['exports']
+tradeDifferencesClean = tradeDifferences.loc[:, ['country', 'year', 'AfricanTradeDifference']]
+td = tradeDifferencesClean.pivot(index='country', columns='year', values='AfricanTradeDifference')
+
+def plotTradeDiff(df):
+    df1 = df.mean(axis = 1).sort_values(ascending = False)
+    df2 = df1.drop(td_mean.index[5:47])
+    df2 = df2.to_frame()
+    df4 = df.merge(df2, left_index=True, right_index=True)
+    df4 = df4.iloc[:, :-1].transpose()
+    ax = df4.plot(figsize=(12,8), fontsize=14)
+    ax.set_xlabel('Year', fontsize = 18)
+    ax.set_ylabel('Trade Differences in USD millions', fontsize = 16)
+    ax.set_title('Trade Differences for African Nations, Top 5 and Bottom 5', fontsize = 22)
+    plt.grid()
+
+plotTradeDiff(td)
+
+# Loans
+
+plotOverall(ChinaLoans)
+
+#Loans By Country
+topLoans = ChinaLoans.iloc[:, :-1].transpose()
+topLoansTotal = round(topLoans.sum(axis=1), 2)
+topLoansTotal = topLoansTotal.to_frame()
+topLoansOverall = topLoans.merge(topLoansTotal, left_index=True, right_index=True).iloc[:, :-1].transpose()
+
+for y in topLoansOverall.index:
+    topLoans1 = topLoansOverall[topLoansOverall.index == y]
+    topLoans1 = topLoans1.transpose()
+    topLoans1 = topLoans1[topLoans1 > 0]
+    topLoans1.columns = ['Value']
+    topLoans1 = topLoans1.dropna().sort_values(by = 'Value', ascending = False)
+    topLoans1.plot(kind='barh', legend = False)
+
+def plotTotalLoansLine(df, df1):
+    df.columns = ['Value']
+    df = df.sort_values(by = 'Value', ascending = False)[:10]
+    df1 = df1.transpose()
+    df1 = df1.merge(df, left_index=True, right_index=True)
+    df2 = df1.transpose().iloc[:-1,:]
+    ax = df2.plot(figsize = (12,8), fontsize = 16)
+    ax.set_xlabel('Year', fontsize = 18)
+    ax.set_ylabel('Loans in USD millions', fontsize = 18)
+    ax.set_title("Top 10 Countries for Chinese Loans\n2000-2015", fontsize = 24, color = '#fffafa')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.set_axis_bgcolor("#fffaf0")
+    plt.legend(loc = 'best', prop={'size': 18})
+    plt.grid()
+    
+def plotTotalLoansPie(df):
+    df1 = df.sort_values(by = 'Value', ascending = False)[:10]
+    df2 = df.sort_values(by = 'Value', ascending = False)[11:]
+    df2 = df2.apply(np.sum)[-1]
+    df1.loc['Other'] = [df2]
+    plt.pie(df1['Value'], labels = df1.index, shadow=True, autopct= '%0.2f%%')
+    plt.title("Total Loans from China to Africa by Country, Top 10\n2000-2015")
+    plt.show()
+
+
+#Plotting Loans 
+
+plotTotalLoansLine(topLoansTotal, ChinaLoans)
+plotTotalLoansPie(topLoansTotal)
+
+
+
+# Loans By Sector
+
+def plotBySector(df):
+    df1 = df[df["Total Loans"] >= 2500]
+    df2 = df[df["Total Loans"] < 2500]
+    df1 = df1.sort_values(by = 'Total Loans', ascending = False)   
+    df1 = df1.iloc[:, :-1].transpose()
+    df2 = df2.iloc[:, :-1]
+    df2 = df2.apply(np.sum)
+    df1['Other'] = df2
+    ax = df1.plot(figsize = (16,10), fontsize = 18)
+    plt.legend(loc = 'best', prop={'size': 20})
+    ax.set_xlabel('\nYear', fontsize = 24)
+    ax.set_ylabel('Loan Total in USD millions', fontsize = 24)
+    ax.set_title("African Loans by Sector, 2000-2015\n", fontsize = 36, color = '#fffafa')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.set_axis_bgcolor("#fffaf0")
+    plt.grid()
+    plt.show()
+    
+def plotBySectorPie(df):
+    df1 = df[df["Total Loans"] >= 2500]
+    df2 = df[df["Total Loans"] < 2500]
+    df1 = df1["Total Loans"]
+    df2 = df2["Total Loans"] 
+    df2sum = df2.sum()
+    df1.loc['Other'] = df2sum
+    df1 = df1.sort_values(ascending = False)
+    plt.pie(df1, labels = df1.index, shadow=True, autopct= '%0.2f%%')
+    plt.title("African Nations Taking Chinese Loans, Top 10\n2000-2015")
+    plt.show()
+
+
+plotBySector(ChinaLoansSectorYear)
+plotBySectorPie(ChinaLoansSectorYear)
+
+
+# Contracts
+
+# Total Plot
+
+plotOverall(ChinaContracts)
+
+
+# By Country
+
+def plotContractsByCountry(df, n):
+    df = df.iloc[:, :-2].transpose()
+    df1 = round(df.sum(axis=1), 2).sort_values(ascending = False)[:n]
+    df1 = df1.to_frame()
+    df2 = df.merge(df1, left_index=True, right_index=True).iloc[:, :-1].transpose()
+    ax = df2.plot(figsize = (12,6), fontsize = 16)
+    ax.set_xlabel('\nYear', fontsize = 18)
+    ax.set_ylabel('USD millions', fontsize = 18)
+    ax.set_title('Top {} Countries for Chinese Countracts, 1998-2015'.format(n), fontsize = 24, color = '#fffafa')
+    ax.spines['right'].set_visible('False')
+    ax.spines['top'].set_visible('False')
+    ax.set_axis_bgcolor("#ffffff")
+    plt.legend(loc = 'best', prop={'size': 16})
+    plt.grid()
+    plt.show()
+    df3 = round(df.sum(axis=1), 2).sort_values(ascending = False)[(n+1):]
+    df3sum = df3.sum()
+    df1.loc['Other'] = df3sum
+    plt.pie(df1, labels = df1.index, shadow=True, autopct= '%0.2f%%')
+    plt.title('Total Revenues of Chinese Contracts by Country\nTop {}, 1998-2015'.format(n))
+
+plotContractsByCountry(ChinaContracts, 10)
+
+
